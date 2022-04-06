@@ -10,14 +10,14 @@ contract PhuturePool {
     uint256 private totalReward;
     address private admin;
 
-    mapping(address => uint256) public rewardsSnapshot;
-    mapping(address => uint256) public stakes;
+    mapping(address => uint256) private rewardsSnapshot;
+    mapping(address => uint256) private stakes;
 
-    event Deposit(address indexed staker, uint256 indexed amount);
+    event Stake(address indexed staker, uint256 indexed amount);
 
     event Distribute(uint256 indexed reward);
 
-    event Withdraw(
+    event UnStake(
         address indexed staker,
         uint256 indexed reward,
         uint256 indexed stakeAmount
@@ -28,17 +28,14 @@ contract PhuturePool {
         token = token_;
     }
 
-    function deposit(uint256 _amount) external {
-        require(
-            token.transferFrom(msg.sender, address(this), _amount),
-            "PhuturePool: transferFrom failed"
-        );
+    function stake(uint256 _amount) external {
+        _transferFrom(msg.sender, address(this), _amount);
 
         rewardsSnapshot[msg.sender] = totalReward;
         stakes[msg.sender] = _amount;
         totalStake = totalStake + _amount;
 
-        emit Deposit(msg.sender, _amount);
+        emit Stake(msg.sender, _amount);
     }
 
     function distribute(uint256 _reward) external {
@@ -48,33 +45,42 @@ contract PhuturePool {
         if (totalStake != 0) {
             totalReward = totalReward + _reward / totalStake;
             rewardDistributed = _reward;
+            _transferFrom(msg.sender, address(this), _reward);
         }
 
         emit Distribute(rewardDistributed);
     }
 
-    function withdraw(uint256 _amount) external {
+    function unStake(uint256 _amount) external {
+        uint256 deposited = stakes[msg.sender];
         require(
-            stakes[msg.sender] >= _amount,
+            deposited >= _amount,
             "PhuturePool: insufficient withdraw amount"
         );
-        //(uint256 stake, uint256 reward) = _calculateReward(msg.sender);
-        uint256 stake = stakes[msg.sender];
+
         uint256 reward = _amount * totalReward - rewardsSnapshot[msg.sender];
 
-        stakes[msg.sender] = stake - _amount;
+        stakes[msg.sender] = deposited - _amount;
+        totalStake = totalStake - deposited;
+
         uint256 withdrawAmount = _amount + reward;
         token.transfer(msg.sender, withdrawAmount);
-        
-        emit Withdraw(msg.sender, reward, _amount);
+
+        emit UnStake(msg.sender, reward, _amount);
     }
 
-    function _calculateReward(address _staker)
-        internal
-        view
-        returns (uint256 stake, uint256 reward)
-    {
-        stake = stakes[_staker];
-        reward = stake * totalReward - rewardsSnapshot[_staker];
+    function getStake(address _account) external view returns (uint256) {
+        return stakes[_account];
+    }
+
+    function _transferFrom(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal {
+        require(
+            token.transferFrom(_from, _to, _amount),
+            "PhuturePool: transferFrom failed"
+        );
     }
 }
