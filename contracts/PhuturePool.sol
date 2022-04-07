@@ -1,36 +1,45 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract PhuturePool {
     IERC20 public immutable token;
-    uint256 private totalStake;
-    uint256 private totalReward;
+    uint256 public totalStake;
+    uint256 public totalReward;
 
     address private admin;
 
+    // mapping of address to reward snapshot
     mapping(address => uint256) private rewardsSnapshot;
+
+    // mapping of address to its stake
     mapping(address => uint256) private stakes;
 
+    // Emitted when an account stakes
     event Stake(address indexed staker, uint256 indexed amount);
 
+    // Emitted when reward is ditributed
     event Distribute(uint256 indexed reward);
 
-    error ZeroStake();
-
+    // Emitted when an account unstakes
     event UnStake(
         address indexed staker,
         uint256 indexed reward,
         uint256 indexed stakeAmount
     );
 
+    error ZeroStake();
+
     constructor(IERC20 token_) {
         admin = msg.sender;
         token = token_;
     }
 
+    /**
+     * @dev caller depsosits tokens to earn rewards.
+     * @param _amount amount to stake
+     */
     function stake(uint256 _amount) external {
         _transferFrom(msg.sender, address(this), _amount);
 
@@ -41,6 +50,10 @@ contract PhuturePool {
         emit Stake(msg.sender, _amount);
     }
 
+    /**
+     * @dev admin function to share rewards proportionally to all stakes
+     * @param _reward amount to didtribute
+     */
     function distribute(uint256 _reward) external {
         require(msg.sender == admin, "PhuturePool: unauthorized");
 
@@ -54,12 +67,13 @@ contract PhuturePool {
         }
     }
 
+    /**
+     * @dev caller unstakes tokens and gets in return deposited amount + reward.
+     * @param _amount amount to unstake
+     */
     function unStake(uint256 _amount) external {
         uint256 deposited = stakes[msg.sender];
-        require(
-            deposited >= _amount,
-            "PhuturePool: insufficient withdraw amount"
-        );
+        require(deposited >= _amount, "PhuturePool: ZERO stake");
 
         uint256 reward = _getReward(msg.sender, _amount);
 
@@ -91,7 +105,7 @@ contract PhuturePool {
         view
         returns (uint256)
     {
-        return (_amount * (totalReward - rewardsSnapshot[_account])/1e18);
+        return (_amount * (totalReward - rewardsSnapshot[_account])) / 1e18;
     }
 
     function _transferFrom(

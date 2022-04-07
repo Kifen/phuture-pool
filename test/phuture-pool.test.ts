@@ -72,13 +72,15 @@ describe("PhuturePool", function () {
     it("should unstake deposit, and get reward", async () => {
       // First staker
       let aliceSigner = alice;
-      let aliceStakeAmount = parseBN(45);
+      let aliceStakeAmount = parseBN(189);
 
       await mockToken
         .connect(aliceSigner)
         .approve(phuturePool.address, aliceStakeAmount);
 
       await phuturePool.connect(aliceSigner).stake(aliceStakeAmount);
+
+      expect(await phuturePool.totalStake()).to.equal(aliceStakeAmount);
 
       const aliceTKNBalanceBeforeWithdrawal = await balanceOf(
         mockToken,
@@ -94,6 +96,10 @@ describe("PhuturePool", function () {
         .approve(phuturePool.address, bobStakeAmount);
 
       await phuturePool.connect(bobSigner).stake(bobStakeAmount);
+      expect(await phuturePool.totalStake()).to.equal(
+        aliceStakeAmount.add(bobStakeAmount)
+      );
+
       const bobTKNBalanceBeforeFirstWithdrawal = await balanceOf(
         mockToken,
         bobAddress
@@ -115,6 +121,8 @@ describe("PhuturePool", function () {
         .to.emit(phuturePool, "UnStake")
         .withArgs(aliceAddress, aliceReward, stake);
 
+      expect(await phuturePool.totalStake()).to.equal(bobStakeAmount);
+
       expect(await phuturePool.getStake(aliceAddress)).to.equal(0);
       expect(await balanceOf(mockToken, aliceAddress)).to.equal(
         aliceTKNBalanceBeforeWithdrawal.add(stake).add(aliceReward)
@@ -127,6 +135,8 @@ describe("PhuturePool", function () {
       await expect(phuturePool.connect(bobSigner).unStake(unStakeAmount))
         .to.emit(phuturePool, "UnStake")
         .withArgs(bobAddress, bobReward, unStakeAmount);
+
+      expect(await phuturePool.totalStake()).to.equal(unStakeAmount);
 
       const bobTKNBalanceBeforeSecondWithdrawal = await balanceOf(
         mockToken,
@@ -147,6 +157,9 @@ describe("PhuturePool", function () {
         .approve(phuturePool.address, zoeStakeAmount);
 
       await phuturePool.connect(zoeSigner).stake(zoeStakeAmount);
+      expect(await phuturePool.totalStake()).to.equal(
+        unStakeAmount.add(zoeStakeAmount)
+      );
 
       const zoeTKNBalanceBeforetWithdrawal = await balanceOf(
         mockToken,
@@ -172,6 +185,8 @@ describe("PhuturePool", function () {
         .to.emit(phuturePool, "UnStake")
         .withArgs(bobAddress, bobNewReward, bobNewUnStakeAmount);
 
+      expect(await phuturePool.totalStake()).to.equal(zoeStakeAmount);
+
       expect(await balanceOf(mockToken, bobAddress)).to.equal(
         bobTKNBalanceBeforeSecondWithdrawal
           .add(bobNewUnStakeAmount)
@@ -186,11 +201,19 @@ describe("PhuturePool", function () {
         .to.emit(phuturePool, "UnStake")
         .withArgs(zoeAddress, zoeReward, zoeStake);
 
+      expect(await phuturePool.totalStake()).to.equal(0);
+
       expect(await phuturePool.getStake(zoeAddress)).to.equal(0);
 
       expect(await balanceOf(mockToken, zoeAddress)).to.equal(
         zoeTKNBalanceBeforetWithdrawal.add(zoeStake).add(zoeReward)
       );
+    });
+
+    it("should fail if account has zero stakes", async () => {
+      await expect(
+        phuturePool.connect(bob).unStake(parseBN(23))
+      ).to.be.revertedWith("PhuturePool: ZERO stake");
     });
   });
 });
