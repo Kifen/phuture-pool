@@ -51,7 +51,7 @@ contract PhuturePool {
     }
 
     /**
-     * @dev admin function to share rewards proportionally to all stakes
+     * @dev admin function to share rewards proportionally to all stakers
      * @param _reward amount to didtribute
      */
     function distribute(uint256 _reward) external {
