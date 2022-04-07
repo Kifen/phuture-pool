@@ -8,6 +8,7 @@ contract PhuturePool {
     IERC20 public immutable token;
     uint256 private totalStake;
     uint256 private totalReward;
+
     address private admin;
 
     mapping(address => uint256) private rewardsSnapshot;
@@ -16,6 +17,8 @@ contract PhuturePool {
     event Stake(address indexed staker, uint256 indexed amount);
 
     event Distribute(uint256 indexed reward);
+
+    error ZeroStake();
 
     event UnStake(
         address indexed staker,
@@ -40,15 +43,15 @@ contract PhuturePool {
 
     function distribute(uint256 _reward) external {
         require(msg.sender == admin, "PhuturePool: unauthorized");
-        uint256 rewardDistributed;
+
         // Only distribute rewards if total amount staked is not 0
         if (totalStake != 0) {
             totalReward = totalReward + _reward / totalStake;
-            rewardDistributed = _reward;
             _transferFrom(msg.sender, address(this), _reward);
+            emit Distribute(_reward);
         }
 
-        emit Distribute(rewardDistributed);
+        revert ZeroStake();
     }
 
     function unStake(uint256 _amount) external {
@@ -61,7 +64,7 @@ contract PhuturePool {
         uint256 reward = _amount * totalReward - rewardsSnapshot[msg.sender];
 
         stakes[msg.sender] = deposited - _amount;
-        totalStake = totalStake - deposited;
+        totalStake = totalStake - _amount;
 
         uint256 withdrawAmount = _amount + reward;
         token.transfer(msg.sender, withdrawAmount);
@@ -78,9 +81,6 @@ contract PhuturePool {
         address _to,
         uint256 _amount
     ) internal {
-        require(
-            token.transferFrom(_from, _to, _amount),
-            "PhuturePool: transferFrom failed"
-        );
+        token.transferFrom(_from, _to, _amount);
     }
 }
