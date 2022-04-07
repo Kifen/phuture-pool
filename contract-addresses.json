@@ -1,0 +1,6 @@
+{
+    "rinkeby": {
+        "MockToken": "0x00182d65A54E1E2Ab34B7367e6cC745e5d8e876a",
+        "PhuturePool": "0x47c1278c0d76026525d83181105E6c7FB270DfEA"
+    }
+}
