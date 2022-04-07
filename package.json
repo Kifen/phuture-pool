@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat test",
+    "compile": "npx hardhat compile",
     "prettier": "prettier --write 'contracts/**/*.sol'",
     "prettier-format": "prettier --config .prettierrc './**/*.ts' --write"
   },
