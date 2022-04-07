@@ -57,7 +57,7 @@ contract PhuturePool {
     function distribute(uint256 _reward) external {
         require(msg.sender == admin, "PhuturePool: unauthorized");
 
-        // Only distribute rewards if total amount staked is not 0
+        // Only distribute rewards if total amount staked is greater than 0
         if (totalStake != 0) {
             totalReward = totalReward + ((_reward * 1e18) / totalStake);
             _transferFrom(msg.sender, address(this), _reward);
