@@ -18,4 +18,5 @@ RINKEBY_URL=
 ETHERSCAN_API_KEY=
 ```
 
-To run test, `npm run test`
+To run test: `npm run test`
+To compile: `npm run compile`
