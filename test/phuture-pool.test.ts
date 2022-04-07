@@ -7,7 +7,7 @@ import {
   MockToken,
   MockToken__factory,
 } from "../typechain";
-import { parseBN, batchMint, Account } from "./utils";
+import { parseBN, batchMint, balanceOf } from "./utils";
 
 describe("PhuturePool", function () {
   let admin: Signer;
@@ -65,6 +65,132 @@ describe("PhuturePool", function () {
       await expect(
         phuturePool.connect(signer).stake(amountBN)
       ).to.be.revertedWith("ERC20: insufficient allowance");
+    });
+  });
+
+  describe("unStake", () => {
+    it("should unstake deposit, and get reward", async () => {
+      // First staker
+      let aliceSigner = alice;
+      let aliceStakeAmount = parseBN(45);
+
+      await mockToken
+        .connect(aliceSigner)
+        .approve(phuturePool.address, aliceStakeAmount);
+
+      await phuturePool.connect(aliceSigner).stake(aliceStakeAmount);
+
+      const aliceTKNBalanceBeforeWithdrawal = await balanceOf(
+        mockToken,
+        aliceAddress
+      );
+
+      // Second staker
+      let bobSigner = bob;
+      let bobStakeAmount = parseBN(105);
+
+      await mockToken
+        .connect(bobSigner)
+        .approve(phuturePool.address, bobStakeAmount);
+
+      await phuturePool.connect(bobSigner).stake(bobStakeAmount);
+      const bobTKNBalanceBeforeFirstWithdrawal = await balanceOf(
+        mockToken,
+        bobAddress
+      );
+
+      // admin distributes reward
+      const reward = parseBN(890);
+      await mockToken.approve(phuturePool.address, reward);
+
+      await expect(phuturePool.distribute(reward))
+        .to.emit(phuturePool, "Distribute")
+        .withArgs(reward);
+
+      // Alice unstakes all her deposited TKN tokens
+      const stake = await phuturePool.getStake(aliceAddress);
+      const aliceReward = await phuturePool.getReward(aliceAddress, stake);
+
+      await expect(phuturePool.connect(aliceSigner).unStake(stake))
+        .to.emit(phuturePool, "UnStake")
+        .withArgs(aliceAddress, aliceReward, stake);
+
+      expect(await phuturePool.getStake(aliceAddress)).to.equal(0);
+      expect(await balanceOf(mockToken, aliceAddress)).to.equal(
+        aliceTKNBalanceBeforeWithdrawal.add(stake).add(aliceReward)
+      );
+
+      // Bob unstakes half of his deposit
+      const unStakeAmount = (await phuturePool.getStake(bobAddress)).div(2);
+      let bobReward = await phuturePool.getReward(bobAddress, unStakeAmount);
+
+      await expect(phuturePool.connect(bobSigner).unStake(unStakeAmount))
+        .to.emit(phuturePool, "UnStake")
+        .withArgs(bobAddress, bobReward, unStakeAmount);
+
+      const bobTKNBalanceBeforeSecondWithdrawal = await balanceOf(
+        mockToken,
+        bobAddress
+      );
+
+      expect(await phuturePool.getStake(bobAddress)).to.equal(unStakeAmount);
+      expect(await balanceOf(mockToken, bobAddress)).to.equal(
+        bobTKNBalanceBeforeFirstWithdrawal.add(unStakeAmount).add(bobReward)
+      );
+
+      // Third staker
+      let zoeSigner = zoe;
+      let zoeStakeAmount = parseBN(200);
+
+      await mockToken
+        .connect(zoeSigner)
+        .approve(phuturePool.address, zoeStakeAmount);
+
+      await phuturePool.connect(zoeSigner).stake(zoeStakeAmount);
+
+      const zoeTKNBalanceBeforetWithdrawal = await balanceOf(
+        mockToken,
+        zoeAddress
+      );
+
+      // admin distributes new reward
+      const secondReward = parseBN(320);
+      await mockToken.approve(phuturePool.address, secondReward);
+
+      await expect(phuturePool.distribute(secondReward))
+        .to.emit(phuturePool, "Distribute")
+        .withArgs(secondReward);
+
+      // Bob unstakes his remaining deposits
+      const bobNewUnStakeAmount = await phuturePool.getStake(bobAddress);
+      let bobNewReward = await phuturePool.getReward(
+        bobAddress,
+        bobNewUnStakeAmount
+      );
+
+      await expect(phuturePool.connect(bobSigner).unStake(bobNewUnStakeAmount))
+        .to.emit(phuturePool, "UnStake")
+        .withArgs(bobAddress, bobNewReward, bobNewUnStakeAmount);
+
+      expect(await balanceOf(mockToken, bobAddress)).to.equal(
+        bobTKNBalanceBeforeSecondWithdrawal
+          .add(bobNewUnStakeAmount)
+          .add(bobNewReward)
+      );
+
+      // Zoe unstakes all her deposited TKN tokens
+      const zoeStake = await phuturePool.getStake(zoeAddress);
+      const zoeReward = await phuturePool.getReward(zoeAddress, zoeStake);
+
+      await expect(phuturePool.connect(zoeSigner).unStake(zoeStake))
+        .to.emit(phuturePool, "UnStake")
+        .withArgs(zoeAddress, zoeReward, zoeStake);
+
+      expect(await phuturePool.getStake(zoeAddress)).to.equal(0);
+
+      expect(await balanceOf(mockToken, zoeAddress)).to.equal(
+        zoeTKNBalanceBeforetWithdrawal.add(zoeStake).add(zoeReward)
+      );
     });
   });
 });

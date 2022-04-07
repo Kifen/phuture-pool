@@ -46,12 +46,12 @@ contract PhuturePool {
 
         // Only distribute rewards if total amount staked is not 0
         if (totalStake != 0) {
-            totalReward = totalReward + _reward / totalStake;
+            totalReward = totalReward + ((_reward * 1e18) / totalStake);
             _transferFrom(msg.sender, address(this), _reward);
             emit Distribute(_reward);
+        } else {
+            revert ZeroStake();
         }
-
-        revert ZeroStake();
     }
 
     function unStake(uint256 _amount) external {
@@ -61,7 +61,7 @@ contract PhuturePool {
             "PhuturePool: insufficient withdraw amount"
         );
 
-        uint256 reward = _amount * totalReward - rewardsSnapshot[msg.sender];
+        uint256 reward = _getReward(msg.sender, _amount);
 
         stakes[msg.sender] = deposited - _amount;
         totalStake = totalStake - _amount;
@@ -74,6 +74,24 @@ contract PhuturePool {
 
     function getStake(address _account) external view returns (uint256) {
         return stakes[_account];
+    }
+
+    function getReward(address _account, uint256 _amount)
+        external
+        view
+        returns (uint256 reward)
+    {
+        if (stakes[_account] > 0) {
+            reward = _getReward(_account, _amount);
+        }
+    }
+
+    function _getReward(address _account, uint256 _amount)
+        internal
+        view
+        returns (uint256)
+    {
+        return (_amount * (totalReward - rewardsSnapshot[_account])/1e18);
     }
 
     function _transferFrom(
