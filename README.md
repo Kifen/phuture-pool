@@ -1,6 +1,6 @@
 # Phuture Pool
 
-phuture-Pool is an implementation of an staking contract using a scaleable reward distribution mechanism. Deployment addresses can be found at [contract-addresses.json](https://github.com/Kifen/phuture-pool/blob/main/contract-addresses.json) and code has been verified on [etherscan](https://rinkeby.etherscan.io/address/0x47c1278c0d76026525d83181105E6c7FB270DfEA#code).
+phuture-pool is an implementation of an staking contract using a scaleable reward distribution mechanism. Deployment addresses can be found at [contract-addresses.json](https://github.com/Kifen/phuture-pool/blob/main/contract-addresses.json) and code has been verified on [etherscan](https://rinkeby.etherscan.io/address/0x47c1278c0d76026525d83181105E6c7FB270DfEA#code).
 
 
 ### Build and Run
