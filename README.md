@@ -8,6 +8,8 @@ phuture-Pool is an implementation of an staking contract using a scaleable rewar
 $ git clone git@github.com:Kifen/phuture-pool.git
 $ cd phuture-pool
 $ npm install
+$ npm run compile
+$ npm run test
 ```
 
 Create file `.env` using below [template](https://github.com/Kifen/phuture-pool/blob/main/.env.example):
@@ -17,6 +19,3 @@ PRIVATE_KEY=
 RINKEBY_URL=
 ETHERSCAN_API_KEY=
 ```
-
-To run test: `npm run test`
-To compile: `npm run compile`
