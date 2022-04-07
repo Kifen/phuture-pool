@@ -14,21 +14,24 @@ describe("PhuturePool", function () {
   let alice: Signer;
   let bob: Signer;
   let zoe: Signer;
+  let random: Signer;
 
   let adminAddress: string;
   let aliceAddress: string;
   let bobAddress: string;
   let zoeAddress: string;
+  let randomAddress: string;
 
   let phuturePool: PhuturePool;
   let mockToken: MockToken;
 
   beforeEach(async () => {
-    [admin, alice, bob, zoe] = await ethers.getSigners();
+    [admin, alice, bob, zoe, random] = await ethers.getSigners();
     adminAddress = await admin.getAddress();
     aliceAddress = await alice.getAddress();
     bobAddress = await bob.getAddress();
     zoeAddress = await zoe.getAddress();
+    randomAddress = await random.getAddress();
 
     mockToken = await new MockToken__factory(admin).deploy("TKN", "TKN");
 
@@ -65,6 +68,17 @@ describe("PhuturePool", function () {
       await expect(
         phuturePool.connect(signer).stake(amountBN)
       ).to.be.revertedWith("ERC20: insufficient allowance");
+    });
+
+    it("should fail if caller does has an insufficient balance", async () => {
+      const signer = random;
+      const amountBN = parseBN(339);
+
+      await mockToken.connect(signer).approve(phuturePool.address, amountBN);
+
+      await expect(
+        phuturePool.connect(signer).stake(amountBN)
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
   });
 
