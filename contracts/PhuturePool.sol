@@ -59,7 +59,9 @@ contract PhuturePool {
 
         // Only distribute rewards if total amount staked is greater than 0
         if (totalStake != 0) {
+            // due to solidity not handling fractions, multiply the reward by 1e18 to get the  full value for operation `_reward/totalStake`
             totalReward = totalReward + ((_reward * 1e18) / totalStake);
+
             _transferFrom(msg.sender, address(this), _reward);
             emit Distribute(_reward);
         } else {
